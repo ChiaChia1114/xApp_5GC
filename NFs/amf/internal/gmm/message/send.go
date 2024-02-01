@@ -2,6 +2,7 @@ package message
 
 import (
 	"bytes"
+	"encoding/hex"
 	"fmt"
 	"github.com/free5gc/amf/internal/context"
 	gmm_common "github.com/free5gc/amf/internal/gmm/common"
@@ -141,7 +142,17 @@ func SendAuthenticationRequest(ue *context.RanUe) {
 	fmt.Println("AV-AUTN:", av.Autn)
 	fmt.Println("AV-RAND:", av.Rand)
 
-	nasMessageBytes := []byte{126, 0, 86, 0, 2, 0, 0, 33, 115, 215, 190, 245, 193, 9, 251, 112, 254, 200, 84, 175, 94, 22, 111, 13, 32, 16, 224, 192, 39, 164, 244, 175, 128, 0, 228, 122, 65, 192, 217, 141, 99, 23, 01, 02, 03, 04, 05}
+	hexString := av.Rand
+	newBytes, err := hex.DecodeString(hexString)
+	if err != nil {
+		fmt.Println("Error decoding hex string:", err)
+		return
+	}
+
+	nasMessageBytes := []byte{126, 0, 86, 0, 2, 0, 0, 33, 115, 215, 190, 245, 193, 9, 251, 112, 254, 200, 84, 175, 94, 22, 111, 13, 32, 16, 224, 192, 39, 164, 244, 175, 128, 0, 228, 122, 65, 192, 217, 141, 99, 23}
+
+	nasMessageBytes = append(nasMessageBytes, newBytes...)
+
 	TestnasMsg := new(bytes.Buffer)
 	TestnasMsg.Write(nasMessageBytes)
 	messageSlice := TestnasMsg.Bytes()
