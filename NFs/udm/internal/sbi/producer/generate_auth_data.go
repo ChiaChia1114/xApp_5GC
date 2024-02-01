@@ -85,6 +85,10 @@ func HandleGenerateAuthDataRequest(request *httpwrapper.Request) *httpwrapper.Re
 	// step 2: retrieve request
 	authInfoRequest := request.Body.(models.AuthenticationInfoRequest)
 	supiOrSuci := request.Params["supiOrSuci"]
+	fmt.Println("authInfoRequest:", authInfoRequest.ServingNetworkName)
+	fmt.Println("authInfoRequest:", authInfoRequest.ResynchronizationInfo)
+	fmt.Println("authInfoRequest:", authInfoRequest.SupportedFeatures)
+	fmt.Println("authInfoRequest:", authInfoRequest.AusfInstanceId)
 
 	// step 3: handle the message
 	response, problemDetails := GenerateAuthDataProcedure(authInfoRequest, supiOrSuci)
@@ -226,10 +230,10 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 		logger.UeauLog.Errorln("Nil PermanentKey")
 		return nil, problemDetails
 	}
-
 	if authSubs.Milenage != nil {
 		if authSubs.Milenage.Op != nil {
 			opStr = authSubs.Milenage.Op.OpValue
+			fmt.Println("opStr: ", opStr)
 			if len(opStr) == opStrLen {
 				op, err = hex.DecodeString(opStr)
 				if err != nil {
@@ -255,6 +259,7 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 
 	if authSubs.Opc != nil && authSubs.Opc.OpcValue != "" {
 		opcStr = authSubs.Opc.OpcValue
+		fmt.Println("opcStr: ", opcStr)
 		if len(opcStr) == opcStrLen {
 			opc, err = hex.DecodeString(opcStr)
 			if err != nil {
@@ -308,7 +313,7 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 		logger.UeauLog.Errorln("err:", err)
 		return nil, problemDetails
 	}
-
+	fmt.Println("sqnStr: ", sqnStr)
 	logger.UeauLog.Tracef("K=[%x], sqn=[%x], OP=[%x], OPC=[%x]", k, sqn, op, opc)
 
 	RAND := make([]byte, 16)
@@ -335,7 +340,7 @@ func GenerateAuthDataProcedure(authInfoRequest models.AuthenticationInfoRequest,
 		logger.UeauLog.Errorln("err:", err)
 		return nil, problemDetails
 	}
-
+	fmt.Println("AMF: ", AMF)
 	logger.UeauLog.Tracef("RAND=[%x], AMF=[%x]", RAND, AMF)
 
 	// re-synchronization
