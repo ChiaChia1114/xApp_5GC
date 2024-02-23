@@ -112,24 +112,6 @@ func BuildAuthenticationRequest(ue *context.AmfUe) ([]byte, error) {
 	m.GmmMessage = nas.NewGmmMessage()
 	m.GmmHeader.SetMessageType(nas.MsgTypeAuthenticationRequest)
 
-	//xAppauthenticationRequest := NewXAppAuthenticationRequest(0)
-	//var tmpArray1 string = "d1caf01691e68f6012d23442ac458411"
-	//b, err := hex.DecodeString(tmpArray1)
-	//if err != nil {
-	//	panic(err)
-	//}
-	//var a [16]uint8
-	//copy(a[:], b)
-	//parameters := []xAppAuthenticationParameterRAND{
-	//	{
-	//		Iei:   1,
-	//		Octet: a,
-	//	},
-	//}
-	//RAND: d1caf01691e68f6012d23442ac458411
-	//xAppauthenticationRequest.xAppAuthenticationParameterRAND.SetxAppRANDValue(a)
-	//m.GmmMessage.AuthenticationRequest = xAppauthenticationRequest
-
 	authenticationRequest := nasMessage.NewAuthenticationRequest(0)
 	authenticationRequest.SetExtendedProtocolDiscriminator(nasMessage.Epd5GSMobilityManagementMessage)
 	authenticationRequest.SpareHalfOctetAndSecurityHeaderType.SetSecurityHeaderType(nas.SecurityHeaderTypePlainNas)
@@ -139,41 +121,47 @@ func BuildAuthenticationRequest(ue *context.AmfUe) ([]byte, error) {
 	authenticationRequest.ABBA.SetLen(uint8(len(ue.ABBA)))
 	authenticationRequest.ABBA.SetABBAContents(ue.ABBA)
 
-	//authenticationRequest.AuthenticationParameterRAND.SetRANDValue(a)
+	switch ue.AuthenticationCtx.AuthType {
+	case models.AuthType__5_G_AKA:
+		var tmpArray [16]byte
+		var av5gAka models.Av5gAka
 
-	// --------------- Original ---------------------//
-	var tmpArray [16]byte
-	var av5gAka models.Av5gAka
+		if err := mapstructure.Decode(ue.AuthenticationCtx.Var5gAuthData, &av5gAka); err != nil {
+			logger.GmmLog.Error("Var5gAuthData Convert Type Error")
+			return nil, err
+		}
 
-	if err := mapstructure.Decode(ue.AuthenticationCtx.Var5gAuthData, &av5gAka); err != nil {
-		logger.GmmLog.Error("Var5gAuthData Convert Type Error")
-		return nil, err
+		rand, err := hex.DecodeString(av5gAka.Rand)
+		if err != nil {
+			return nil, err
+		}
+		authenticationRequest.AuthenticationParameterRAND =
+			nasType.NewAuthenticationParameterRAND(nasMessage.AuthenticationRequestAuthenticationParameterRANDType)
+		copy(tmpArray[:], rand[0:16])
+		authenticationRequest.AuthenticationParameterRAND.SetRANDValue(tmpArray)
+
+		autn, err := hex.DecodeString(av5gAka.Autn)
+		if err != nil {
+			return nil, err
+		}
+		authenticationRequest.AuthenticationParameterAUTN =
+			nasType.NewAuthenticationParameterAUTN(nasMessage.AuthenticationRequestAuthenticationParameterAUTNType)
+		authenticationRequest.AuthenticationParameterAUTN.SetLen(uint8(len(autn)))
+		copy(tmpArray[:], autn[0:16])
+		authenticationRequest.AuthenticationParameterAUTN.SetAUTN(tmpArray)
+	case models.AuthType_EAP_AKA_PRIME:
+		eapMsg := ue.AuthenticationCtx.Var5gAuthData.(string)
+		rawEapMsg, err := base64.StdEncoding.DecodeString(eapMsg)
+		if err != nil {
+			return nil, err
+		}
+		authenticationRequest.EAPMessage = nasType.NewEAPMessage(nasMessage.AuthenticationRequestEAPMessageType)
+		authenticationRequest.EAPMessage.SetLen(uint16(len(rawEapMsg)))
+		authenticationRequest.EAPMessage.SetEAPMessage(rawEapMsg)
 	}
-
-	rand, err := hex.DecodeString(av5gAka.Rand)
-	if err != nil {
-		return nil, err
-	}
-	authenticationRequest.AuthenticationParameterRAND =
-		nasType.NewAuthenticationParameterRAND(nasMessage.AuthenticationRequestAuthenticationParameterRANDType)
-	copy(tmpArray[:], rand[0:16])
-	authenticationRequest.AuthenticationParameterRAND.SetRANDValue(tmpArray)
-
-	autn, err := hex.DecodeString(av5gAka.Autn)
-	if err != nil {
-		return nil, err
-	}
-	authenticationRequest.AuthenticationParameterAUTN =
-		nasType.NewAuthenticationParameterAUTN(nasMessage.AuthenticationRequestAuthenticationParameterAUTNType)
-	authenticationRequest.AuthenticationParameterAUTN.SetLen(uint8(len(autn)))
-	copy(tmpArray[:], autn[0:16])
-	authenticationRequest.AuthenticationParameterAUTN.SetAUTN(tmpArray)
 
 	m.GmmMessage.AuthenticationRequest = authenticationRequest
-	// --------------- Original ---------------------//
 
-	//data := new(bytes.Buffer)
-	//fmt.Println("data response: ", m.PlainNasEncode())
 	return m.PlainNasEncode()
 }
 

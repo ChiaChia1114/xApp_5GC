@@ -126,6 +126,7 @@ func SendAuthenticationRequest(ue *context.RanUe) {
 		return
 	}
 
+	fmt.Println("nasMsg: ", nasMsg)
 	//------------------------ Terry Modify Start --------------------------//
 	//	Goals: Generate a OUT-X nas packet.                                 //
 	//  Method:                                                             //
@@ -134,24 +135,45 @@ func SendAuthenticationRequest(ue *context.RanUe) {
 	//     3. Send to O-CU with the NGAP protocol                           //
 	//----------------------------------------------------------------------//
 
-	av, err := XAppAKAGenerateAUTH()
-	if err != nil {
-		amfUe.GmmLog.Error(err.Error())
-		return
+	////  filtered Message start function//
+	//var filteredMsg []byte
+	//for _, num := range nasMsg {
+	//	if num != 126 && num != 0 && num != 86 && num != 2 {
+	//		filteredMsg = append(filteredMsg, num)
+	//	}
+	//}
+	//fmt.Println("filteredMsg: ", filteredMsg)
+	////  filtered Message end function//
+
+	nasMessageBytes := []byte{}
+	nasMessageBytes = append(nasMessageBytes, nasMsg...)
+	for i := 0; i <= 9; i++ {
+		av, err := XAppAKAGenerateAUTH()
+		if err != nil {
+			amfUe.GmmLog.Error(err.Error())
+			return
+		}
+		//fmt.Println("AV-AUTN:", av.Autn)
+		//fmt.Println("AV-RAND:", av.Rand)
+
+		RANDhexString := av.Rand
+		RANDnewBytes, err := hex.DecodeString(RANDhexString)
+		if err != nil {
+			fmt.Println("Error decoding hex string:", err)
+			return
+		}
+
+		AutnhexString := av.Autn
+		AutnnewBytes, err := hex.DecodeString(AutnhexString)
+		if err != nil {
+			fmt.Println("Error decoding hex string:", err)
+			return
+		}
+		nasMessageBytes = append(nasMessageBytes, AutnnewBytes...)
+		nasMessageBytes = append(nasMessageBytes, RANDnewBytes...)
 	}
-	fmt.Println("AV-AUTN:", av.Autn)
-	fmt.Println("AV-RAND:", av.Rand)
 
-	hexString := av.Rand
-	newBytes, err := hex.DecodeString(hexString)
-	if err != nil {
-		fmt.Println("Error decoding hex string:", err)
-		return
-	}
-
-	nasMessageBytes := []byte{126, 0, 86, 0, 2, 0, 0, 33, 115, 215, 190, 245, 193, 9, 251, 112, 254, 200, 84, 175, 94, 22, 111, 13, 32, 16, 224, 192, 39, 164, 244, 175, 128, 0, 228, 122, 65, 192, 217, 141, 99, 23}
-
-	nasMessageBytes = append(nasMessageBytes, newBytes...)
+	//nasMessageBytes := []byte{126, 0, 86, 0, 2, 0, 0, 33, 115, 215, 190, 245, 193, 9, 251, 112, 254, 200, 84, 175, 94, 22, 111, 13, 32, 16, 224, 192, 39, 164, 244, 175, 128, 0, 228, 122, 65, 192, 217, 141, 99, 23}
 
 	TestnasMsg := new(bytes.Buffer)
 	TestnasMsg.Write(nasMessageBytes)
