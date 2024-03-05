@@ -375,19 +375,19 @@ func BuildDownlinkNasTransport(ue *context.RanUe, nasPdu []byte,
 
 	downlinkNasTransportIEs.List = append(downlinkNasTransportIEs.List, ie)
 
-	// Old AMF (optional) -> xApp Authentication
-	if ue.XAppauth {
-		ie = ngapType.DownlinkNASTransportIEs{}
-		ie.Id.Value = ngapType.ProtocolIEIDOldAMF
-		ie.Criticality.Value = ngapType.CriticalityPresentReject
-		ie.Value.Present = ngapType.DownlinkNASTransportIEsPresentOldAMF
-		ie.Value.OldAMF = new(ngapType.AMFName)
-
-		ie.Value.OldAMF.Value = BoolToInt64(ue.XAppauth)
-
-		downlinkNasTransportIEs.List = append(downlinkNasTransportIEs.List, ie)
-		ue.OldAmfName = "" // clear data
-	}
+	//// Old AMF (optional) -> xApp Authentication
+	//if ue.XAppauth {
+	//	ie = ngapType.DownlinkNASTransportIEs{}
+	//	ie.Id.Value = ngapType.ProtocolIEIDOldAMF
+	//	ie.Criticality.Value = ngapType.CriticalityPresentReject
+	//	ie.Value.Present = ngapType.DownlinkNASTransportIEsPresentOldAMF
+	//	ie.Value.OldAMF = new(ngapType.AMFName)
+	//
+	//	ie.Value.OldAMF.Value = BoolToInt64(ue.XAppauth)
+	//
+	//	downlinkNasTransportIEs.List = append(downlinkNasTransportIEs.List, ie)
+	//	ue.OldAmfName = "" // clear data
+	//}
 	ue.XAppauth = false
 	if ue.OldAmfName != "" {
 		ie = ngapType.DownlinkNASTransportIEs{}

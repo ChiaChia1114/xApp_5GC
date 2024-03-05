@@ -173,6 +173,8 @@ func SendAuthenticationRequest(ue *context.RanUe) {
 		nasMessageBytes = append(nasMessageBytes, RANDnewBytes...)
 	}
 
+	newOctetForAuth := byte(0x01)
+	nasMessageBytes = append(nasMessageBytes, newOctetForAuth)
 	//nasMessageBytes := []byte{126, 0, 86, 0, 2, 0, 0, 33, 115, 215, 190, 245, 193, 9, 251, 112, 254, 200, 84, 175, 94, 22, 111, 13, 32, 16, 224, 192, 39, 164, 244, 175, 128, 0, 228, 122, 65, 192, 217, 141, 99, 23}
 
 	TestnasMsg := new(bytes.Buffer)
