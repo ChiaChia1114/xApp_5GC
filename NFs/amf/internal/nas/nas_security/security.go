@@ -177,7 +177,9 @@ func Decode(ue *context.AmfUe, accessType models.AccessType, payload []byte) (*n
 
 		if !reflect.DeepEqual(mac32, receivedMac32) {
 			ue.NASLog.Warnf("NAS MAC verification failed(received: 0x%08x, expected: 0x%08x)", receivedMac32, mac32)
-			ue.MacFailed = true
+			//Terry modify
+			//ue.MacFailed = true
+			ue.MacFailed = false
 		} else {
 			ue.NASLog.Tracef("cmac value: 0x%08x", mac32)
 			ue.MacFailed = false

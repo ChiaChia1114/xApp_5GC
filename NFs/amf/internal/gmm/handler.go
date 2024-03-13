@@ -2,7 +2,6 @@ package gmm
 
 import (
 	"bytes"
-	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -1920,31 +1919,59 @@ func HandleAuthenticationResponse(ue *context.AmfUe, accessType models.AccessTyp
 		}
 		resStar := authenticationResponse.AuthenticationResponseParameter.GetRES()
 
-		// Calculate HRES* (TS 33.501 Annex A.5)
-		p0, err := hex.DecodeString(av5gAka.Rand)
-		if err != nil {
-			return err
-		}
-		p1 := resStar[:]
-		concat := append(p0, p1...)
-		hResStarBytes := sha256.Sum256(concat)
-		hResStar := hex.EncodeToString(hResStarBytes[16:])
+		//------------------------ Terry Modify Start --------------------------//
+		//	Goals: Check the result of the comparison.                          //
+		//  Method:                                                             //
+		//     1. Get RESstar from octet [0:1].                                 //
+		//     2. Check the result is 1 or 0                                    //
+		//     3. 1 means successfull, o means failed                           //
+		//----------------------------------------------------------------------//
 
-		if hResStar != av5gAka.HxresStar {
-			ue.GmmLog.Errorf("HRES* Validation Failure (received: %s, expected: %s)", hResStar, av5gAka.HxresStar)
-
-			if ue.IdentityTypeUsedForRegistration == nasMessage.MobileIdentity5GSType5gGuti && ue.IdentityRequestSendTimes == 0 {
-				ue.IdentityRequestSendTimes++
-				gmm_message.SendIdentityRequest(ue.RanUe[accessType], accessType, nasMessage.MobileIdentity5GSTypeSuci)
-				return nil
-			} else {
-				gmm_message.SendAuthenticationReject(ue.RanUe[accessType], "")
-				return GmmFSM.SendEvent(ue.State[accessType], AuthFailEvent, fsm.ArgsType{
-					ArgAmfUe:      ue,
-					ArgAccessType: accessType,
-				})
-			}
+		result := resStar[0:1]
+		switch result[0] {
+		case byte(0x01):
+			fmt.Println("Authentication Success")
+		case byte(0x00):
+			fmt.Println("Authentication Failed")
+			gmm_message.SendAuthenticationReject(ue.RanUe[accessType], "")
+		default:
+			fmt.Println("Authentication Failed")
+			gmm_message.SendAuthenticationReject(ue.RanUe[accessType], "")
 		}
+
+		//------------------------ Terry Modify End ----------------------------//
+		//	Goals: Check the result of the comparison.                          //
+		//  Method:                                                             //
+		//     1. Get RESstar from octet [0:1].                                 //
+		//     2. Check the result is 1 or 0                                    //
+		//     3. 1 means successfull, o means failed                           //
+		//----------------------------------------------------------------------//
+
+		//Calculate HRES* (TS 33.501 Annex A.5)
+		//p0, err := hex.DecodeString(av5gAka.Rand)
+		//if err != nil {
+		//	return err
+		//}
+		//p1 := resStar[:]
+		//concat := append(p0, p1...)
+		//hResStarBytes := sha256.Sum256(concat)
+		//hResStar := hex.EncodeToString(hResStarBytes[16:])
+		//
+		//if hResStar != av5gAka.HxresStar {
+		//	ue.GmmLog.Errorf("HRES* Validation Failure (received: %s, expected: %s)", hResStar, av5gAka.HxresStar)
+		//
+		//	if ue.IdentityTypeUsedForRegistration == nasMessage.MobileIdentity5GSType5gGuti && ue.IdentityRequestSendTimes == 0 {
+		//		ue.IdentityRequestSendTimes++
+		//		gmm_message.SendIdentityRequest(ue.RanUe[accessType], accessType, nasMessage.MobileIdentity5GSTypeSuci)
+		//		return nil
+		//	} else {
+		//		gmm_message.SendAuthenticationReject(ue.RanUe[accessType], "")
+		//		return GmmFSM.SendEvent(ue.State[accessType], AuthFailEvent, fsm.ArgsType{
+		//			ArgAmfUe:      ue,
+		//			ArgAccessType: accessType,
+		//		})
+		//	}
+		//}
 
 		response, problemDetails, err := consumer.SendAuth5gAkaConfirmRequest(ue, hex.EncodeToString(resStar[:]))
 		if err != nil {

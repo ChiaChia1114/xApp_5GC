@@ -6,9 +6,9 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
+	"fmt"
 	"math/rand"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/bronze1man/radius"
@@ -81,7 +81,8 @@ func HandleUeAuthPostRequest(request *httpwrapper.Request) *httpwrapper.Response
 }
 
 // func UeAuthPostRequestProcedure(updateAuthenticationInfo models.AuthenticationInfo) (
-//    response *models.UeAuthenticationCtx, locationURI string, problemDetails *models.ProblemDetails) {
+//
+//	response *models.UeAuthenticationCtx, locationURI string, problemDetails *models.ProblemDetails) {
 func UeAuthPostRequestProcedure(updateAuthenticationInfo models.AuthenticationInfo) (*models.UeAuthenticationCtx,
 	string, *models.ProblemDetails) {
 	var responseBody models.UeAuthenticationCtx
@@ -332,19 +333,51 @@ func Auth5gAkaComfirmRequestProcedure(updateConfirmationData models.Confirmation
 
 	// Compare the received RES* with the stored XRES*
 	logger.Auth5gAkaComfirmLog.Infof("res*: %x\nXres*: %x\n", updateConfirmationData.ResStar, ausfCurrentContext.XresStar)
-	if strings.Compare(updateConfirmationData.ResStar, ausfCurrentContext.XresStar) == 0 {
+
+	//------------------------ Terry Modify Start --------------------------//
+	//	Goals: Check the result of the comparison.                          //
+	//  Method:                                                             //
+	//     1. Get RESstar from octet [0:1].                                 //
+	//     2. Check the result is 1 or 0                                    //
+	//     3. 1 means successfull, o means failed                           //
+	//----------------------------------------------------------------------//
+	fmt.Println("AUSF of ResStar= ", updateConfirmationData.ResStar)
+	if updateConfirmationData.ResStar == "01000000000000000000000000000000" {
 		ausfCurrentContext.AuthStatus = models.AuthResult_SUCCESS
 		responseBody.AuthResult = models.AuthResult_SUCCESS
 		success = true
 		logger.Auth5gAkaComfirmLog.Infoln("5G AKA confirmation succeeded")
 		responseBody.Supi = currentSupi
 		responseBody.Kseaf = ausfCurrentContext.Kseaf
+		fmt.Println("Kseaf: ", ausfCurrentContext.Kseaf)
 	} else {
 		ausfCurrentContext.AuthStatus = models.AuthResult_FAILURE
 		responseBody.AuthResult = models.AuthResult_FAILURE
 		logConfirmFailureAndInformUDM(ConfirmationDataResponseID, models.AuthType__5_G_AKA, servingNetworkName,
 			"5G AKA confirmation failed", ausfCurrentContext.UdmUeauUrl)
 	}
+	//------------------------ Terry Modify End ----------------------------//
+	//	Goals: Check the result of the comparison.                          //
+	//  Method:                                                             //
+	//     1. Get RESstar from octet [0:1].                                 //
+	//     2. Check the result is 1 or 0                                    //
+	//     3. 1 means successfull, o means failed                           //
+	//----------------------------------------------------------------------//
+
+	// Original code
+	//if strings.Compare(updateConfirmationData.ResStar, ausfCurrentContext.XresStar) == 0 {
+	//	ausfCurrentContext.AuthStatus = models.AuthResult_SUCCESS
+	//	responseBody.AuthResult = models.AuthResult_SUCCESS
+	//	success = true
+	//	logger.Auth5gAkaComfirmLog.Infoln("5G AKA confirmation succeeded")
+	//	responseBody.Supi = currentSupi
+	//	responseBody.Kseaf = ausfCurrentContext.Kseaf
+	//} else {
+	//	ausfCurrentContext.AuthStatus = models.AuthResult_FAILURE
+	//	responseBody.AuthResult = models.AuthResult_FAILURE
+	//	logConfirmFailureAndInformUDM(ConfirmationDataResponseID, models.AuthType__5_G_AKA, servingNetworkName,
+	//		"5G AKA confirmation failed", ausfCurrentContext.UdmUeauUrl)
+	//}
 
 	if sendErr := sendAuthResultToUDM(currentSupi, models.AuthType__5_G_AKA, success, servingNetworkName,
 		ausfCurrentContext.UdmUeauUrl); sendErr != nil {

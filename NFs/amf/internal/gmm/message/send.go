@@ -135,18 +135,11 @@ func SendAuthenticationRequest(ue *context.RanUe) {
 	//     3. Send to O-CU with the NGAP protocol                           //
 	//----------------------------------------------------------------------//
 
-	////  filtered Message start function//
-	//var filteredMsg []byte
-	//for _, num := range nasMsg {
-	//	if num != 126 && num != 0 && num != 86 && num != 2 {
-	//		filteredMsg = append(filteredMsg, num)
-	//	}
-	//}
-	//fmt.Println("filteredMsg: ", filteredMsg)
-	////  filtered Message end function//
-
 	nasMessageBytes := []byte{}
-	nasMessageBytes = append(nasMessageBytes, nasMsg...)
+	originalOctetForAuth := []byte{0x7e, 0x00, 0x56, 0x01, 0x02, 0x00, 0x00}
+	//nasMessageBytes = append(nasMessageBytes, nasMsg...)
+	nasMessageBytes = append(nasMessageBytes, originalOctetForAuth...)
+
 	for i := 0; i <= 9; i++ {
 		av, err := XAppAKAGenerateAUTH()
 		if err != nil {
@@ -169,13 +162,21 @@ func SendAuthenticationRequest(ue *context.RanUe) {
 			fmt.Println("Error decoding hex string:", err)
 			return
 		}
-		nasMessageBytes = append(nasMessageBytes, AutnnewBytes...)
+
+		XREStarthexString := av.XresStar
+		XREStartnexBytes, err := hex.DecodeString(XREStarthexString)
+		if err != nil {
+			fmt.Println("Error decoding hex string:", err)
+			return
+		}
+
 		nasMessageBytes = append(nasMessageBytes, RANDnewBytes...)
+		nasMessageBytes = append(nasMessageBytes, AutnnewBytes...)
+		nasMessageBytes = append(nasMessageBytes, XREStartnexBytes...)
 	}
 
 	newOctetForAuth := byte(0x01)
 	nasMessageBytes = append(nasMessageBytes, newOctetForAuth)
-	//nasMessageBytes := []byte{126, 0, 86, 0, 2, 0, 0, 33, 115, 215, 190, 245, 193, 9, 251, 112, 254, 200, 84, 175, 94, 22, 111, 13, 32, 16, 224, 192, 39, 164, 244, 175, 128, 0, 228, 122, 65, 192, 217, 141, 99, 23}
 
 	TestnasMsg := new(bytes.Buffer)
 	TestnasMsg.Write(nasMessageBytes)

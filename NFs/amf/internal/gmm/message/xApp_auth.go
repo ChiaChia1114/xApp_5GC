@@ -288,32 +288,6 @@ func XAppAKAGenerateAUTH() (response *models.AuthenticationVector, err error) {
 
 	SQNheStr := fmt.Sprintf("%x", bigSQN)
 	SQNheStr = strictHex(SQNheStr, 12)
-	//patchItemArray := []models.PatchItem{
-	//	{
-	//		Op:    models.PatchOperation_REPLACE,
-	//		Path:  "/sequenceNumber",
-	//		Value: SQNheStr,
-	//	},
-	//}
-
-	//var rsp *http.Response
-	//rsp, err = client.AuthenticationDataDocumentApi.ModifyAuthentication(
-	//	context.Background(), supi, patchItemArray)
-	//if err != nil {
-	//	problemDetails = &models.ProblemDetails{
-	//		Status: http.StatusForbidden,
-	//		Cause:  "modification is rejected ",
-	//		Detail: err.Error(),
-	//	}
-	//
-	//	logger.GmmLog.Infof("update sqn error:", err)
-	//	return nil, problemDetails
-	//}
-	//defer func() {
-	//	if rspCloseErr := rsp.Body.Close(); rspCloseErr != nil {
-	//		logger.SdmLog.Errorf("ModifyAuthentication response body cannot close: %+v", rspCloseErr)
-	//	}
-	//}()
 
 	// Run milenage
 	macA, macS := make([]byte, 8), make([]byte, 8)
