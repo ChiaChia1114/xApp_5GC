@@ -80,7 +80,7 @@ configuration:
   # retransmission timer for NAS Registration Accept message
   t3550:
     enable: true     # true or false
-    expireTime: 6s   # default is 6 seconds
+    expireTime: 2s   # default is 6 seconds
     maxRetryTimes: 4 # the max number of retransmission
   # retransmission timer for NAS Authentication Request/Security Mode Command message
   t3560:

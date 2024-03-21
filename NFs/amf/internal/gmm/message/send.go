@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/free5gc/amf/internal/context"
 	gmm_common "github.com/free5gc/amf/internal/gmm/common"
+	uestatus "github.com/free5gc/amf/internal/gmm/message/uestatus"
 	"github.com/free5gc/amf/internal/logger"
 	ngap_message "github.com/free5gc/amf/internal/ngap/message"
 	"github.com/free5gc/amf/internal/sbi/producer/callback"
@@ -133,7 +134,17 @@ func SendAuthenticationRequest(ue *context.RanUe) {
 	//     1. Generate the OUT-X first (f1, f2, f3, f4, f5)                 //
 	//     2. Replace the nas container with the byte                       //
 	//     3. Send to O-CU with the NGAP protocol                           //
+	//     4. Identity the UE status to trigger NORA-AKA or not.            //
 	//----------------------------------------------------------------------//
+
+	if !(uestatus.CheckUEStatus(ue.AmfUe.Supi)) {
+		// UE is in initial Context Set up procedure
+		newUe := uestatus.NewAmfUe(ue.AmfUe.Supi, true)
+		uestatus.StoreAmfUe(newUe)
+		//return
+	} else {
+		return
+	}
 
 	nasMessageBytes := []byte{}
 	originalOctetForAuth := []byte{0x7e, 0x00, 0x56, 0x01, 0x02, 0x00, 0x00}
