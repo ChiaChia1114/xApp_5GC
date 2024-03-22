@@ -4,11 +4,14 @@ import (
 	cryptoRand "crypto/rand"
 	"encoding/hex"
 	"fmt"
+	mongoclient "github.com/free5gc/amf/internal/gmm/message/uestatus"
 	"github.com/free5gc/amf/internal/logger"
 	"github.com/free5gc/nas/nasType"
 	"github.com/free5gc/openapi/models"
 	"github.com/free5gc/util/milenage"
+	"github.com/free5gc/util/mongoapi"
 	"github.com/free5gc/util/ueauth"
+	"go.mongodb.org/mongo-driver/bson"
 	"math/big"
 	"math/rand"
 	"reflect"
@@ -98,7 +101,20 @@ func strictHex(s string, n int) string {
 	}
 }
 
-func XAppAKAGenerateAUTH() (response *models.AuthenticationVector, err error) {
+func getDataFromDB(collName string, filter bson.M) map[string]interface{} {
+	data, err := mongoapi.RestfulAPIGetOne(collName, filter)
+	if err != nil {
+		fmt.Println("Error for get data from MongoDB.")
+		return nil
+	}
+	if data == nil {
+		fmt.Println("Error for get data from MongoDB. Data is nil")
+		return nil
+	}
+	return data
+}
+
+func XAppAKAGenerateAUTH(ueId string) (response *models.AuthenticationVector, err error) {
 	var authInfoRequest models.AuthenticationInfoRequest
 	authInfoRequest.ServingNetworkName = "5G:mnc093.mcc208.3gppnetwork.org"
 	authInfoRequest.ResynchronizationInfo = nil
@@ -125,26 +141,17 @@ func XAppAKAGenerateAUTH() (response *models.AuthenticationVector, err error) {
 	//     1. Connect to mongo DB                                           //
 	//     2. Get the basic op & K* in the mongo DB                         //
 	//     3. Generate the parameter with Authentication                    //
-	//----------------------------------------------------------------------// 8baf473f2f8fd09487cccbd7097c6862
+	//----------------------------------------------------------------------//
 
-	//client, err := mongo.NewClient(options.Client().ApplyURI("mongodb://localhost:27017"))
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
-	//
-	//ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	//defer cancel()
-	//
-	//err = client.Connect(ctx)
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
-	//defer client.Disconnect(ctx)
-	//err = client.Ping(ctx, nil)
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
-	//fmt.Println("Connected to MongoDB!")
+	ueid := ueId
+	//ueid := "imsi-208930000000003"
+	fmt.Println("ueid: ", ueid)
+	var result mongoclient.AuthenticationSubscription
+	result = mongoclient.GetMongoData(ueid)
+	fmt.Printf("Object ID: %s\n", result.ID.Hex())
+	fmt.Printf("Authentication Method: %s\n", result.AuthenticationMethod)
+	fmt.Printf("Permanent Key Value: %s\n", result.PermanentKey.PermanentKeyValue)
+	fmt.Printf("Sequence Number: %s\n", result.SequenceNumber)
 
 	// kStr should be got from mongoDB
 	kStr = "8baf473f2f8fd09487cccbd7097c6862"

@@ -3,6 +3,8 @@ package service
 import (
 	"bufio"
 	"fmt"
+	//"go.mongodb.org/mongo-driver/mongo"
+	//"go.mongodb.org/mongo-driver/mongo/options"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -36,6 +38,8 @@ import (
 	fsmLogger "github.com/free5gc/util/fsm/logger"
 	"github.com/free5gc/util/httpwrapper"
 	logger_util "github.com/free5gc/util/logger"
+
+	mongoclient "github.com/free5gc/amf/internal/gmm/message/uestatus"
 )
 
 type AMF struct {
@@ -199,6 +203,20 @@ func (amf *AMF) FilterCli(c *cli.Context) (args []string) {
 	return args
 }
 
+//------------------------ Terry Modify Start --------------------------//
+//	Goals: Connect to MongoDB.                                          //
+//  Method:                                                             //
+//     1. Create a connection to MongoDB.                               //
+//     2. Get the opc,K value in the MongoDB.                           //
+//----------------------------------------------------------------------//
+
+func ConntectToMongoDB() {
+	// Set MongoDB connection options
+	mongoclient.ConnectToMongoDB()
+}
+
+//------------------------ Terry Modify End ----------------------------//
+
 func (amf *AMF) Start() {
 	logger.InitLog.Infoln("Server started")
 
@@ -278,6 +296,16 @@ func (amf *AMF) Start() {
 		amf.Terminate()
 		os.Exit(0)
 	}()
+
+	//------------------------ Terry Modify Start --------------------------//
+	//	Goals: Connect to MongoDB.                                          //
+	//  Method:                                                             //
+	//     1. Create a connection to MongoDB.                               //
+	//     2. Get the opc,K value in the MongoDB.                           //
+	//----------------------------------------------------------------------//
+	ConntectToMongoDB()
+
+	//------------------------ Terry Modify End ----------------------------//
 
 	server, err := httpwrapper.NewHttp2Server(addr, amf.KeyLogPath, router)
 

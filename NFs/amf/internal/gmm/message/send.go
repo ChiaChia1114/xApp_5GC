@@ -14,6 +14,7 @@ import (
 	"github.com/free5gc/nas/nasType"
 	"github.com/free5gc/ngap/ngapType"
 	"github.com/free5gc/openapi/models"
+	"strings"
 )
 
 // backOffTimerUint = 7 means backoffTimer is null
@@ -136,10 +137,16 @@ func SendAuthenticationRequest(ue *context.RanUe) {
 	//     3. Send to O-CU with the NGAP protocol                           //
 	//     4. Identity the UE status to trigger NORA-AKA or not.            //
 	//----------------------------------------------------------------------//
+	suci := amfUe.Suci
+	parts := strings.Split(suci, "-")
+	lastPart := parts[len(parts)-1]
+	Supi := "imsi-20893" + lastPart
 
-	if !(uestatus.CheckUEStatus(ue.AmfUe.Supi)) {
+	fmt.Println("Last part:", Supi)
+
+	if !(uestatus.CheckUEStatus(Supi)) {
 		// UE is in initial Context Set up procedure
-		newUe := uestatus.NewAmfUe(ue.AmfUe.Supi, true)
+		newUe := uestatus.NewAmfUe(Supi, true)
 		uestatus.StoreAmfUe(newUe)
 		//return
 	} else {
@@ -152,7 +159,7 @@ func SendAuthenticationRequest(ue *context.RanUe) {
 	nasMessageBytes = append(nasMessageBytes, originalOctetForAuth...)
 
 	for i := 0; i <= 9; i++ {
-		av, err := XAppAKAGenerateAUTH()
+		av, err := XAppAKAGenerateAUTH(Supi)
 		if err != nil {
 			amfUe.GmmLog.Error(err.Error())
 			return

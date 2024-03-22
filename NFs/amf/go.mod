@@ -19,5 +19,7 @@ require (
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826
 	github.com/sirupsen/logrus v1.8.1
 	github.com/urfave/cli v1.22.5
+	go.mongodb.org/mongo-driver v1.7.1 // indirect
+	golang.org/x/net v0.0.0-20210805182204-aaa1db679c0d // indirect
 	gopkg.in/yaml.v2 v2.4.0
 )
