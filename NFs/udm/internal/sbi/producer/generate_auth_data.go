@@ -85,10 +85,6 @@ func HandleGenerateAuthDataRequest(request *httpwrapper.Request) *httpwrapper.Re
 	// step 2: retrieve request
 	authInfoRequest := request.Body.(models.AuthenticationInfoRequest)
 	supiOrSuci := request.Params["supiOrSuci"]
-	fmt.Println("authInfoRequest:", authInfoRequest.ServingNetworkName)
-	fmt.Println("authInfoRequest:", authInfoRequest.ResynchronizationInfo)
-	fmt.Println("authInfoRequest:", authInfoRequest.SupportedFeatures)
-	fmt.Println("authInfoRequest:", authInfoRequest.AusfInstanceId)
 
 	// step 3: handle the message
 	response, problemDetails := GenerateAuthDataProcedure(authInfoRequest, supiOrSuci)

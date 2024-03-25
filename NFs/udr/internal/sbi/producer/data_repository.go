@@ -289,7 +289,6 @@ func HandleQueryAuthSubsData(request *httpwrapper.Request) *httpwrapper.Response
 
 	collName := "subscriptionData.authenticationData.authenticationSubscription"
 	ueId := request.Params["ueId"]
-	fmt.Println("MongoDB- ueId: ", ueId, " collName: ", collName)
 	response, problemDetails := QueryAuthSubsDataProcedure(collName, ueId)
 
 	if response != nil {
@@ -304,7 +303,6 @@ func HandleQueryAuthSubsData(request *httpwrapper.Request) *httpwrapper.Response
 
 func QueryAuthSubsDataProcedure(collName string, ueId string) (map[string]interface{}, *models.ProblemDetails) {
 	filter := bson.M{"ueId": ueId}
-	fmt.Println("filter= ", filter, "colname = ", collName)
 	data, pd := getDataFromDB(collName, filter)
 	if pd != nil {
 		logger.DataRepoLog.Errorf("QueryAuthSubsDataProcedure err: %s", pd.Detail)

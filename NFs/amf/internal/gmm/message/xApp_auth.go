@@ -9,9 +9,7 @@ import (
 	"github.com/free5gc/nas/nasType"
 	"github.com/free5gc/openapi/models"
 	"github.com/free5gc/util/milenage"
-	"github.com/free5gc/util/mongoapi"
 	"github.com/free5gc/util/ueauth"
-	"go.mongodb.org/mongo-driver/bson"
 	"math/big"
 	"math/rand"
 	"reflect"
@@ -101,19 +99,6 @@ func strictHex(s string, n int) string {
 	}
 }
 
-func getDataFromDB(collName string, filter bson.M) map[string]interface{} {
-	data, err := mongoapi.RestfulAPIGetOne(collName, filter)
-	if err != nil {
-		fmt.Println("Error for get data from MongoDB.")
-		return nil
-	}
-	if data == nil {
-		fmt.Println("Error for get data from MongoDB. Data is nil")
-		return nil
-	}
-	return data
-}
-
 func XAppAKAGenerateAUTH(ueId string) (response *models.AuthenticationVector, err error) {
 	var authInfoRequest models.AuthenticationInfoRequest
 	authInfoRequest.ServingNetworkName = "5G:mnc093.mcc208.3gppnetwork.org"
@@ -148,13 +133,14 @@ func XAppAKAGenerateAUTH(ueId string) (response *models.AuthenticationVector, er
 	fmt.Println("ueid: ", ueid)
 	var result mongoclient.AuthenticationSubscription
 	result = mongoclient.GetMongoData(ueid)
-	fmt.Printf("Object ID: %s\n", result.ID.Hex())
-	fmt.Printf("Authentication Method: %s\n", result.AuthenticationMethod)
-	fmt.Printf("Permanent Key Value: %s\n", result.PermanentKey.PermanentKeyValue)
-	fmt.Printf("Sequence Number: %s\n", result.SequenceNumber)
+	//fmt.Printf("Object ID: %s\n", result.ID.Hex())
+	//fmt.Printf("Authentication Method: %s\n", result.AuthenticationMethod)
+	//fmt.Printf("Permanent Key Value: %s\n", result.PermanentKey.PermanentKeyValue)
+	//fmt.Printf("Sequence Number: %s\n", result.SequenceNumber)
 
 	// kStr should be got from mongoDB
-	kStr = "8baf473f2f8fd09487cccbd7097c6862"
+	//kStr = "8baf473f2f8fd09487cccbd7097c6862"
+	kStr = result.PermanentKey.PermanentKeyValue
 	if len(kStr) == keyStrLen {
 		k, err = hex.DecodeString(kStr)
 		if err != nil {
@@ -165,7 +151,8 @@ func XAppAKAGenerateAUTH(ueId string) (response *models.AuthenticationVector, er
 	}
 
 	// opcstr should be got from mongoDB
-	opcStr = "8e27b6af0e692e750f32667a3b14605d"
+	//opcStr = "8e27b6af0e692e750f32667a3b14605d"
+	opcStr = result.Opc.OpcValue
 	if len(opcStr) == opcStrLen {
 		opc, err = hex.DecodeString(opcStr)
 		if err != nil {
@@ -178,7 +165,8 @@ func XAppAKAGenerateAUTH(ueId string) (response *models.AuthenticationVector, er
 	}
 
 	// opstr should be got from mongoDB
-	opStr = "0"
+	//opStr = "0"
+	opStr = result.Milenage.Op.OpValue
 	if len(opStr) == opStrLen {
 		op, err = hex.DecodeString(opStr)
 		if err != nil {
@@ -208,7 +196,8 @@ func XAppAKAGenerateAUTH(ueId string) (response *models.AuthenticationVector, er
 		}
 	}
 
-	sqnStr := "16f3b3f70ff2"
+	//sqnStr := "16f3b3f70ff2"
+	sqnStr := result.SequenceNumber
 	sqn, err := hex.DecodeString(sqnStr)
 	if err != nil {
 		logger.GmmLog.Infof("err:", err)
