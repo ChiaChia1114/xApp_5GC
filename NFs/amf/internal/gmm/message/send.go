@@ -2,10 +2,10 @@ package message
 
 import (
 	"bytes"
-	"encoding/hex"
 	"fmt"
 	"github.com/free5gc/amf/internal/context"
 	gmm_common "github.com/free5gc/amf/internal/gmm/common"
+	mongoclient "github.com/free5gc/amf/internal/gmm/message/uestatus"
 	uestatus "github.com/free5gc/amf/internal/gmm/message/uestatus"
 	"github.com/free5gc/amf/internal/logger"
 	ngap_message "github.com/free5gc/amf/internal/ngap/message"
@@ -150,51 +150,72 @@ func SendAuthenticationRequest(ue *context.RanUe) {
 		uestatus.StoreAmfUe(newUe)
 		//return
 	} else {
+		fmt.Println("Trigger NORA-AKA, return and wait for Authentication Response")
 		return
 	}
 
+	ueid := Supi
+	var Subscriber mongoclient.AuthenticationSubscription
+	Subscriber = mongoclient.GetMongoData(ueid)
+	opcStr := Subscriber.Opc.OpcValue
+	kStr := Subscriber.PermanentKey.PermanentKeyValue
+
+	opcStrByte := []byte(opcStr)
+	kStrByte := []byte(kStr)
+
 	nasMessageBytes := []byte{}
 	originalOctetForAuth := []byte{0x7e, 0x00, 0x56, 0x01, 0x02, 0x00, 0x00}
-	//nasMessageBytes = append(nasMessageBytes, nasMsg...)
 	nasMessageBytes = append(nasMessageBytes, originalOctetForAuth...)
 
-	for i := 0; i <= 9; i++ {
-		av, err := XAppAKAGenerateAUTH(Supi)
-		if err != nil {
-			amfUe.GmmLog.Error(err.Error())
-			return
-		}
-		//fmt.Println("AV-AUTN:", av.Autn)
-		//fmt.Println("AV-RAND:", av.Rand)
-
-		RANDhexString := av.Rand
-		RANDnewBytes, err := hex.DecodeString(RANDhexString)
-		if err != nil {
-			fmt.Println("Error decoding hex string:", err)
-			return
-		}
-
-		AutnhexString := av.Autn
-		AutnnewBytes, err := hex.DecodeString(AutnhexString)
-		if err != nil {
-			fmt.Println("Error decoding hex string:", err)
-			return
-		}
-
-		XREStarthexString := av.XresStar
-		XREStartnexBytes, err := hex.DecodeString(XREStarthexString)
-		if err != nil {
-			fmt.Println("Error decoding hex string:", err)
-			return
-		}
-
-		nasMessageBytes = append(nasMessageBytes, RANDnewBytes...)
-		nasMessageBytes = append(nasMessageBytes, AutnnewBytes...)
-		nasMessageBytes = append(nasMessageBytes, XREStartnexBytes...)
-	}
+	// Append the string bytes to nasMsg
+	nasMessageBytes = append(nasMessageBytes, opcStrByte...)
+	nasMessageBytes = append(nasMessageBytes, kStrByte...)
 
 	newOctetForAuth := byte(0x01)
 	nasMessageBytes = append(nasMessageBytes, newOctetForAuth)
+
+	//nasMessageBytes := []byte{}
+	//originalOctetForAuth := []byte{0x7e, 0x00, 0x56, 0x01, 0x02, 0x00, 0x00}
+	////nasMessageBytes = append(nasMessageBytes, nasMsg...)
+	//nasMessageBytes = append(nasMessageBytes, originalOctetForAuth...)
+
+	//for i := 0; i <= 9; i++ {
+	//	av, err := XAppAKAGenerateAUTH(Supi)
+	//	if err != nil {
+	//		amfUe.GmmLog.Error(err.Error())
+	//		return
+	//	}
+	//	//fmt.Println("AV-AUTN:", av.Autn)
+	//	//fmt.Println("AV-RAND:", av.Rand)
+	//
+	//	RANDhexString := av.Rand
+	//	RANDnewBytes, err := hex.DecodeString(RANDhexString)
+	//	if err != nil {
+	//		fmt.Println("Error decoding hex string:", err)
+	//		return
+	//	}
+	//
+	//	AutnhexString := av.Autn
+	//	AutnnewBytes, err := hex.DecodeString(AutnhexString)
+	//	if err != nil {
+	//		fmt.Println("Error decoding hex string:", err)
+	//		return
+	//	}
+	//
+	//	XREStarthexString := av.XresStar
+	//	XREStartnexBytes, err := hex.DecodeString(XREStarthexString)
+	//	if err != nil {
+	//		fmt.Println("Error decoding hex string:", err)
+	//		return
+	//	}
+	//
+	//	nasMessageBytes = append(nasMessageBytes, RANDnewBytes...)
+	//	nasMessageBytes = append(nasMessageBytes, AutnnewBytes...)
+	//	nasMessageBytes = append(nasMessageBytes, XREStartnexBytes...)
+	//}
+
+	//newOctetForAuth := byte(0x01)
+	//nasMessageBytes = append(nasMessageBytes, newOctetForAuth)
 
 	TestnasMsg := new(bytes.Buffer)
 	TestnasMsg.Write(nasMessageBytes)
