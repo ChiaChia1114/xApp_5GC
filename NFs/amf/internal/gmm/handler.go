@@ -16,6 +16,7 @@ import (
 
 	"github.com/free5gc/amf/internal/context"
 	gmm_message "github.com/free5gc/amf/internal/gmm/message"
+	Authtimer "github.com/free5gc/amf/internal/gmm/timer"
 	ngap_message "github.com/free5gc/amf/internal/ngap/message"
 	"github.com/free5gc/amf/internal/sbi/consumer"
 	"github.com/free5gc/amf/internal/sbi/producer/callback"
@@ -1484,6 +1485,12 @@ func HandleConfigurationUpdateComplete(ue *context.AmfUe,
 func AuthenticationProcedure(ue *context.AmfUe, accessType models.AccessType) (bool, error) {
 	ue.GmmLog.Info("Authentication procedure")
 
+	// Terry Modify start: Add Timer to calculate service time
+	StartTime := time.Now()
+	newUe := Authtimer.NewServiceTimer(ue.Suci, StartTime)
+	Authtimer.StoreTimeStamp(newUe)
+	// Terry Modify end: Add Timer to calculate service time
+
 	// Check whether UE has SUCI and SUPI
 	if IdentityVerification(ue) {
 		ue.GmmLog.Debugln("UE has SUCI / SUPI")
@@ -1926,6 +1933,12 @@ func HandleAuthenticationResponse(ue *context.AmfUe, accessType models.AccessTyp
 		//     2. Check the result is 1 or 0                                    //
 		//     3. 1 means successfull, o means failed                           //
 		//----------------------------------------------------------------------//
+
+		ET := time.Now()
+		ST := Authtimer.GetStartTime(ue.Suci)
+		fmt.Println(ST)
+		AuthenticationServiceTime := Authtimer.CalculateServiceTime(ST, ET)
+		fmt.Println("Authentication Procedure Transmission Time: ", AuthenticationServiceTime)
 
 		result := resStar[0:1]
 		switch result[0] {

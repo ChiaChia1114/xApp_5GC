@@ -7,6 +7,7 @@ import (
 	"github.com/free5gc/amf/internal/context"
 	gmm_common "github.com/free5gc/amf/internal/gmm/common"
 	uestatus "github.com/free5gc/amf/internal/gmm/message/uestatus"
+	Authtimer "github.com/free5gc/amf/internal/gmm/timer"
 	"github.com/free5gc/amf/internal/logger"
 	ngap_message "github.com/free5gc/amf/internal/ngap/message"
 	"github.com/free5gc/amf/internal/sbi/producer/callback"
@@ -15,6 +16,7 @@ import (
 	"github.com/free5gc/ngap/ngapType"
 	"github.com/free5gc/openapi/models"
 	"strings"
+	"time"
 )
 
 // backOffTimerUint = 7 means backoffTimer is null
@@ -150,9 +152,19 @@ func SendAuthenticationRequest(ue *context.RanUe) {
 		uestatus.StoreAmfUe(newUe)
 		//return
 	} else {
+		ET := time.Now()
+		ST := Authtimer.GetStartTime(ue.AmfUe.Suci)
+		AuthenticationServiceTime := Authtimer.CalculateServiceTime(ST, ET)
+		fmt.Println("Authentication Procedure Service Time: ", AuthenticationServiceTime)
+
+		STforTransmission := time.Now()
+		fmt.Println(STforTransmission)
+		Result := Authtimer.SetStartTime(ue.AmfUe.Suci, STforTransmission)
+		if !Result {
+			fmt.Println("Set Start Timer for Transmission time with Authentication Request failed.")
+		}
 		return
 	}
-
 	nasMessageBytes := []byte{}
 	originalOctetForAuth := []byte{0x7e, 0x00, 0x56, 0x01, 0x02, 0x00, 0x00}
 	//nasMessageBytes = append(nasMessageBytes, nasMsg...)
@@ -203,6 +215,18 @@ func SendAuthenticationRequest(ue *context.RanUe) {
 
 	//fmt.Println("NAS message:", nasMsg)
 	ue.XAppauth = true
+
+	ET := time.Now()
+	ST := Authtimer.GetStartTime(ue.AmfUe.Suci)
+	AuthenticationServiceTime := Authtimer.CalculateServiceTime(ST, ET)
+	fmt.Println("Authentication Procedure Service Time: ", AuthenticationServiceTime)
+
+	STforTransmission := time.Now()
+	fmt.Println(STforTransmission)
+	Result := Authtimer.SetStartTime(ue.AmfUe.Suci, STforTransmission)
+	if !Result {
+		fmt.Println("Set Start Timer for Transmission time with Authentication Request failed.")
+	}
 	//------------------------ Terry Modify End --------------------------//
 
 	ngap_message.SendDownlinkNasTransport(ue, messageSlice, nil)
