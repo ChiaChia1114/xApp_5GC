@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	AuthTimer "github.com/free5gc/amf/internal/gmm/timer"
 	"reflect"
 	"strconv"
 	"strings"
@@ -1911,6 +1912,11 @@ func HandleAuthenticationResponse(ue *context.AmfUe, accessType models.AccessTyp
 	if ue.AuthenticationCtx == nil {
 		return fmt.Errorf("Ue Authentication Context is nil")
 	}
+
+	ET := time.Now()
+	ST := AuthTimer.GetStartTime(ue.Suci)
+	timeStamp := AuthTimer.CalculateServiceTime(ST, ET)
+	fmt.Println("Authentication Procedure time: ", timeStamp)
 
 	switch ue.AuthenticationCtx.AuthType {
 	case models.AuthType__5_G_AKA:

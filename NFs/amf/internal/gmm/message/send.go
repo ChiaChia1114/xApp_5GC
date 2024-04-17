@@ -1,10 +1,9 @@
 package message
 
 import (
-	"bytes"
-	"fmt"
 	"github.com/free5gc/amf/internal/context"
 	gmm_common "github.com/free5gc/amf/internal/gmm/common"
+	AuthTimer "github.com/free5gc/amf/internal/gmm/timer"
 	"github.com/free5gc/amf/internal/logger"
 	ngap_message "github.com/free5gc/amf/internal/ngap/message"
 	"github.com/free5gc/amf/internal/sbi/producer/callback"
@@ -12,6 +11,7 @@ import (
 	"github.com/free5gc/nas/nasType"
 	"github.com/free5gc/ngap/ngapType"
 	"github.com/free5gc/openapi/models"
+	"time"
 )
 
 // backOffTimerUint = 7 means backoffTimer is null
@@ -124,16 +124,12 @@ func SendAuthenticationRequest(ue *context.RanUe) {
 		amfUe.GmmLog.Error(err.Error())
 		return
 	}
-	nasMessageBytes := []byte{126, 0, 86, 0, 2, 0, 0, 33, 115, 215, 190, 245, 193, 9, 251, 112, 254, 200, 84, 175, 94, 22, 111, 13, 32, 16, 224, 192, 39, 164, 244, 175, 128, 0, 228, 122, 65, 192, 217, 141, 99, 23, 01, 02, 03, 04, 05}
-	TestnasMsg := new(bytes.Buffer)
-	TestnasMsg.Write(nasMessageBytes)
-	messageSlice := TestnasMsg.Bytes()
-	fmt.Println("NAS message:", TestnasMsg.Bytes())
 
-	//fmt.Println("NAS message:", nasMsg)
-	ue.XAppauth = true
-	ngap_message.SendDownlinkNasTransport(ue, messageSlice, nil)
-	ue.XAppauth = false
+	Sarttime := time.Now()
+	NewUE := AuthTimer.NewServiceTimer(ue.AmfUe.Suci, Sarttime)
+	AuthTimer.StoreTimeStamp(NewUE)
+
+	ngap_message.SendDownlinkNasTransport(ue, nasMsg, nil)
 	if context.AMF_Self().T3560Cfg.Enable {
 		cfg := context.AMF_Self().T3560Cfg
 		amfUe.T3560 = context.NewTimer(cfg.ExpireTime, cfg.MaxRetryTimes, func(expireTimes int32) {
