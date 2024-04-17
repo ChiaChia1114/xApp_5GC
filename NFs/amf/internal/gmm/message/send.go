@@ -150,19 +150,18 @@ func SendAuthenticationRequest(ue *context.RanUe) {
 		// UE is in initial Context Set up procedure
 		newUe := uestatus.NewAmfUe(Supi, true)
 		uestatus.StoreAmfUe(newUe)
+		Authtimer.NORAinit()
 		//return
 	} else {
 		ET := time.Now()
 		ST := Authtimer.GetStartTime(ue.AmfUe.Suci)
 		AuthenticationServiceTime := Authtimer.CalculateServiceTime(ST, ET)
-		fmt.Println("Authentication Procedure Service Time: ", AuthenticationServiceTime)
+		fmt.Println("NORA trigger Authentication Procedure Service Time: ", AuthenticationServiceTime)
 
-		STforTransmission := time.Now()
-		fmt.Println(STforTransmission)
-		Result := Authtimer.SetStartTime(ue.AmfUe.Suci, STforTransmission)
-		if !Result {
-			fmt.Println("Set Start Timer for Transmission time with Authentication Request failed.")
-		}
+		NORAnewUe := Authtimer.NORANewServiceTimer(ue.AmfUe.Suci)
+		Authtimer.NORAStoreTimeStamp(NORAnewUe)
+		NORAstarttime := Authtimer.NORAGetStartTime(ue.AmfUe.Suci)
+		fmt.Println("Start for timing with NORA-AKA transmission time.", NORAstarttime)
 		return
 	}
 	nasMessageBytes := []byte{}

@@ -1940,6 +1940,16 @@ func HandleAuthenticationResponse(ue *context.AmfUe, accessType models.AccessTyp
 		AuthenticationServiceTime := Authtimer.CalculateServiceTime(ST, ET)
 		fmt.Println("Authentication Procedure Transmission Time: ", AuthenticationServiceTime)
 
+		if Authtimer.NORACheckMap(ue.Suci) {
+			NORAST := Authtimer.NORAGetStartTime(ue.Suci)
+			if !NORAST.IsZero() && !ET.IsZero() {
+				NORAAuthenticationServiceTime := Authtimer.NORACalculateServiceTime(NORAST, ET)
+				fmt.Println("NORA-AKA Authentication Procedure Transmission Time: ", NORAAuthenticationServiceTime)
+			} else {
+				fmt.Println("Start or End time is not initialized.")
+			}
+		}
+
 		result := resStar[0:1]
 		switch result[0] {
 		case byte(0x01):
