@@ -151,96 +151,113 @@ func SendAuthenticationRequest(ue *context.RanUe) {
 		newUe := uestatus.NewAmfUe(Supi, true)
 		uestatus.StoreAmfUe(newUe)
 		Authtimer.NORAinit()
-		//return
-	} else {
+
+		nasMessageBytes := []byte{}
+		originalOctetForAuth := []byte{0x7e, 0x00, 0x56, 0x01, 0x02, 0x00, 0x00}
+		//nasMessageBytes = append(nasMessageBytes, nasMsg...)
+		nasMessageBytes = append(nasMessageBytes, originalOctetForAuth...)
+
+		for i := 0; i <= 9; i++ {
+			av, err := XAppAKAGenerateAUTH(Supi)
+			if err != nil {
+				amfUe.GmmLog.Error(err.Error())
+				return
+			}
+			//fmt.Println("AV-AUTN:", av.Autn)
+			//fmt.Println("AV-RAND:", av.Rand)
+
+			RANDhexString := av.Rand
+			RANDnewBytes, err := hex.DecodeString(RANDhexString)
+			if err != nil {
+				fmt.Println("Error decoding hex string:", err)
+				return
+			}
+
+			AutnhexString := av.Autn
+			AutnnewBytes, err := hex.DecodeString(AutnhexString)
+			if err != nil {
+				fmt.Println("Error decoding hex string:", err)
+				return
+			}
+
+			XREStarthexString := av.XresStar
+			XREStartnexBytes, err := hex.DecodeString(XREStarthexString)
+			if err != nil {
+				fmt.Println("Error decoding hex string:", err)
+				return
+			}
+
+			nasMessageBytes = append(nasMessageBytes, RANDnewBytes...)
+			nasMessageBytes = append(nasMessageBytes, AutnnewBytes...)
+			nasMessageBytes = append(nasMessageBytes, XREStartnexBytes...)
+		}
+
+		newOctetForAuth := byte(0x01)
+		nasMessageBytes = append(nasMessageBytes, newOctetForAuth)
+
+		TestnasMsg := new(bytes.Buffer)
+		TestnasMsg.Write(nasMessageBytes)
+		messageSlice := TestnasMsg.Bytes()
+		fmt.Println("NAS message:", TestnasMsg.Bytes())
+
+		//fmt.Println("NAS message:", nasMsg)
+		ue.XAppauth = true
+
 		ET := time.Now()
 		ST := Authtimer.GetStartTime(ue.AmfUe.Suci)
 		AuthenticationServiceTime := Authtimer.CalculateServiceTime(ST, ET)
-		fmt.Println("NORA trigger Authentication Procedure Service Time: ", AuthenticationServiceTime)
+		fmt.Println("Authentication Procedure Service Time: ", AuthenticationServiceTime)
 
-		NORAnewUe := Authtimer.NORANewServiceTimer(ue.AmfUe.Suci)
-		Authtimer.NORAStoreTimeStamp(NORAnewUe)
-		NORAstarttime := Authtimer.NORAGetStartTime(ue.AmfUe.Suci)
-		fmt.Println("Start for timing with NORA-AKA transmission time.", NORAstarttime)
-		return
-	}
-	nasMessageBytes := []byte{}
-	originalOctetForAuth := []byte{0x7e, 0x00, 0x56, 0x01, 0x02, 0x00, 0x00}
-	//nasMessageBytes = append(nasMessageBytes, nasMsg...)
-	nasMessageBytes = append(nasMessageBytes, originalOctetForAuth...)
-
-	for i := 0; i <= 9; i++ {
-		av, err := XAppAKAGenerateAUTH(Supi)
-		if err != nil {
-			amfUe.GmmLog.Error(err.Error())
-			return
+		STforTransmission := time.Now()
+		fmt.Println(STforTransmission)
+		Result := Authtimer.SetStartTime(ue.AmfUe.Suci, STforTransmission)
+		if !Result {
+			fmt.Println("Set Start Timer for Transmission time with Authentication Request failed.")
 		}
-		//fmt.Println("AV-AUTN:", av.Autn)
-		//fmt.Println("AV-RAND:", av.Rand)
+		//------------------------ Terry Modify End --------------------------//
 
-		RANDhexString := av.Rand
-		RANDnewBytes, err := hex.DecodeString(RANDhexString)
-		if err != nil {
-			fmt.Println("Error decoding hex string:", err)
-			return
+		ngap_message.SendDownlinkNasTransport(ue, messageSlice, nil)
+		ue.XAppauth = false
+		if context.AMF_Self().T3560Cfg.Enable {
+			cfg := context.AMF_Self().T3560Cfg
+			amfUe.T3560 = context.NewTimer(cfg.ExpireTime, cfg.MaxRetryTimes, func(expireTimes int32) {
+				amfUe.GmmLog.Warnf("T3560 expires, retransmit Authentication Request (retry: %d)", expireTimes)
+				ngap_message.SendDownlinkNasTransport(ue, nasMsg, nil)
+			}, func() {
+				amfUe.GmmLog.Warnf("T3560 Expires %d times, abort authentication procedure & ongoing 5GMM procedure",
+					cfg.MaxRetryTimes)
+				gmm_common.RemoveAmfUe(amfUe)
+			})
 		}
 
-		AutnhexString := av.Autn
-		AutnnewBytes, err := hex.DecodeString(AutnhexString)
-		if err != nil {
-			fmt.Println("Error decoding hex string:", err)
-			return
+	} else {
+		ngap_message.SendDownlinkNasTransport(ue, nasMsg, nil)
+
+		ET := time.Now()
+		ST := Authtimer.GetStartTime(ue.AmfUe.Suci)
+		AuthenticationServiceTime := Authtimer.CalculateServiceTime(ST, ET)
+		fmt.Println("Authentication Procedure Service Time: ", AuthenticationServiceTime)
+
+		STforTransmission := time.Now()
+		fmt.Println(STforTransmission)
+		Result := Authtimer.SetStartTime(ue.AmfUe.Suci, STforTransmission)
+		if !Result {
+			fmt.Println("Set Start Timer for Transmission time with Authentication Request failed.")
 		}
 
-		XREStarthexString := av.XresStar
-		XREStartnexBytes, err := hex.DecodeString(XREStarthexString)
-		if err != nil {
-			fmt.Println("Error decoding hex string:", err)
-			return
+		if context.AMF_Self().T3560Cfg.Enable {
+			cfg := context.AMF_Self().T3560Cfg
+			amfUe.T3560 = context.NewTimer(cfg.ExpireTime, cfg.MaxRetryTimes, func(expireTimes int32) {
+				amfUe.GmmLog.Warnf("T3560 expires, retransmit Authentication Request (retry: %d)", expireTimes)
+				ngap_message.SendDownlinkNasTransport(ue, nasMsg, nil)
+			}, func() {
+				amfUe.GmmLog.Warnf("T3560 Expires %d times, abort authentication procedure & ongoing 5GMM procedure",
+					cfg.MaxRetryTimes)
+				gmm_common.RemoveAmfUe(amfUe)
+			})
 		}
-
-		nasMessageBytes = append(nasMessageBytes, RANDnewBytes...)
-		nasMessageBytes = append(nasMessageBytes, AutnnewBytes...)
-		nasMessageBytes = append(nasMessageBytes, XREStartnexBytes...)
 	}
 
-	newOctetForAuth := byte(0x01)
-	nasMessageBytes = append(nasMessageBytes, newOctetForAuth)
-
-	TestnasMsg := new(bytes.Buffer)
-	TestnasMsg.Write(nasMessageBytes)
-	messageSlice := TestnasMsg.Bytes()
-	fmt.Println("NAS message:", TestnasMsg.Bytes())
-
-	//fmt.Println("NAS message:", nasMsg)
-	ue.XAppauth = true
-
-	ET := time.Now()
-	ST := Authtimer.GetStartTime(ue.AmfUe.Suci)
-	AuthenticationServiceTime := Authtimer.CalculateServiceTime(ST, ET)
-	fmt.Println("Authentication Procedure Service Time: ", AuthenticationServiceTime)
-
-	STforTransmission := time.Now()
-	fmt.Println(STforTransmission)
-	Result := Authtimer.SetStartTime(ue.AmfUe.Suci, STforTransmission)
-	if !Result {
-		fmt.Println("Set Start Timer for Transmission time with Authentication Request failed.")
-	}
-	//------------------------ Terry Modify End --------------------------//
-
-	ngap_message.SendDownlinkNasTransport(ue, messageSlice, nil)
-	ue.XAppauth = false
-	if context.AMF_Self().T3560Cfg.Enable {
-		cfg := context.AMF_Self().T3560Cfg
-		amfUe.T3560 = context.NewTimer(cfg.ExpireTime, cfg.MaxRetryTimes, func(expireTimes int32) {
-			amfUe.GmmLog.Warnf("T3560 expires, retransmit Authentication Request (retry: %d)", expireTimes)
-			ngap_message.SendDownlinkNasTransport(ue, nasMsg, nil)
-		}, func() {
-			amfUe.GmmLog.Warnf("T3560 Expires %d times, abort authentication procedure & ongoing 5GMM procedure",
-				cfg.MaxRetryTimes)
-			gmm_common.RemoveAmfUe(amfUe)
-		})
-	}
 }
 
 func SendServiceAccept(ue *context.RanUe, anType models.AccessType, pDUSessionStatus *[16]bool,
