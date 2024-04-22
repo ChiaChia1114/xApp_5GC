@@ -3,7 +3,6 @@ package message
 import (
 	"github.com/free5gc/amf/internal/context"
 	gmm_common "github.com/free5gc/amf/internal/gmm/common"
-	AuthTimer "github.com/free5gc/amf/internal/gmm/timer"
 	"github.com/free5gc/amf/internal/logger"
 	ngap_message "github.com/free5gc/amf/internal/ngap/message"
 	"github.com/free5gc/amf/internal/sbi/producer/callback"
@@ -11,7 +10,6 @@ import (
 	"github.com/free5gc/nas/nasType"
 	"github.com/free5gc/ngap/ngapType"
 	"github.com/free5gc/openapi/models"
-	"time"
 )
 
 // backOffTimerUint = 7 means backoffTimer is null
@@ -124,10 +122,6 @@ func SendAuthenticationRequest(ue *context.RanUe) {
 		amfUe.GmmLog.Error(err.Error())
 		return
 	}
-
-	Sarttime := time.Now()
-	NewUE := AuthTimer.NewServiceTimer(ue.AmfUe.Suci, Sarttime)
-	AuthTimer.StoreTimeStamp(NewUE)
 
 	ngap_message.SendDownlinkNasTransport(ue, nasMsg, nil)
 	if context.AMF_Self().T3560Cfg.Enable {

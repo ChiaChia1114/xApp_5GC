@@ -451,6 +451,13 @@ func HandleRegistrationRequest(ue *context.AmfUe, anType models.AccessType, proc
 		ue.Suci, plmnId = nasConvert.SuciToString(mobileIdentity5GSContents)
 		ue.PlmnId = util.PlmnIdStringToModels(plmnId)
 		ue.GmmLog.Debugf("SUCI: %s", ue.Suci)
+
+		/// Terry calculate transmission time start
+		StartTime := time.Now()
+		NewUE := AuthTimer.NewServiceTimer(ue.Suci, StartTime)
+		AuthTimer.StoreTimeStamp(NewUE)
+		/// Terry calculate transmission time end
+
 	case nasMessage.MobileIdentity5GSType5gGuti:
 		guamiFromUeGutiTmp, guti := nasConvert.GutiToString(mobileIdentity5GSContents)
 		guamiFromUeGuti = guamiFromUeGutiTmp
@@ -1916,7 +1923,7 @@ func HandleAuthenticationResponse(ue *context.AmfUe, accessType models.AccessTyp
 	ET := time.Now()
 	ST := AuthTimer.GetStartTime(ue.Suci)
 	timeStamp := AuthTimer.CalculateServiceTime(ST, ET)
-	fmt.Println("Authentication Procedure time: ", timeStamp)
+	fmt.Println("5G-AKA Authentication Transmission time: ", timeStamp)
 
 	switch ue.AuthenticationCtx.AuthType {
 	case models.AuthType__5_G_AKA:
