@@ -356,6 +356,7 @@ func forward5GSMMessageToSMF(
 func HandleRegistrationRequest(ue *context.AmfUe, anType models.AccessType, procedureCode int64,
 	registrationRequest *nasMessage.RegistrationRequest) error {
 	var guamiFromUeGuti models.Guami
+
 	amfSelf := context.AMF_Self()
 
 	if ue == nil {
@@ -450,6 +451,11 @@ func HandleRegistrationRequest(ue *context.AmfUe, anType models.AccessType, proc
 		ue.Suci, plmnId = nasConvert.SuciToString(mobileIdentity5GSContents)
 		ue.PlmnId = util.PlmnIdStringToModels(plmnId)
 		ue.GmmLog.Debugf("SUCI: %s", ue.Suci)
+		// Terry Modify start: Add Timer to calculate service time
+		StartTime := time.Now()
+		newUe := Authtimer.NewServiceTimer(ue.Suci, StartTime)
+		Authtimer.StoreTimeStamp(newUe)
+		// Terry Modify end: Add Timer to calculate service time
 	case nasMessage.MobileIdentity5GSType5gGuti:
 		guamiFromUeGutiTmp, guti := nasConvert.GutiToString(mobileIdentity5GSContents)
 		guamiFromUeGuti = guamiFromUeGutiTmp
@@ -1485,12 +1491,6 @@ func HandleConfigurationUpdateComplete(ue *context.AmfUe,
 func AuthenticationProcedure(ue *context.AmfUe, accessType models.AccessType) (bool, error) {
 	ue.GmmLog.Info("Authentication procedure")
 
-	// Terry Modify start: Add Timer to calculate service time
-	StartTime := time.Now()
-	newUe := Authtimer.NewServiceTimer(ue.Suci, StartTime)
-	Authtimer.StoreTimeStamp(newUe)
-	// Terry Modify end: Add Timer to calculate service time
-
 	// Check whether UE has SUCI and SUPI
 	if IdentityVerification(ue) {
 		ue.GmmLog.Debugln("UE has SUCI / SUPI")
@@ -1935,8 +1935,8 @@ func HandleAuthenticationResponse(ue *context.AmfUe, accessType models.AccessTyp
 		//----------------------------------------------------------------------//
 
 		ET := time.Now()
+		//fmt.Println("3. Suci: ", ue.Suci)
 		ST := Authtimer.GetStartTime(ue.Suci)
-		fmt.Println(ST)
 		AuthenticationServiceTime := Authtimer.CalculateServiceTime(ST, ET)
 		fmt.Println("Authentication Procedure Transmission Time: ", AuthenticationServiceTime)
 
