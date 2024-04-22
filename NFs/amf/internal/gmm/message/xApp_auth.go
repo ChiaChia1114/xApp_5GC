@@ -105,8 +105,6 @@ func XAppAKAGenerateAUTH(ueId string) (response *models.AuthenticationVector, er
 	authInfoRequest.ResynchronizationInfo = nil
 	authInfoRequest.SupportedFeatures = ""
 
-	logger.GmmLog.Infof("In GenerateAuthDataProcedure")
-
 	rand.Seed(time.Now().UnixNano())
 	//var err error
 
@@ -129,14 +127,8 @@ func XAppAKAGenerateAUTH(ueId string) (response *models.AuthenticationVector, er
 	//----------------------------------------------------------------------//
 
 	ueid := ueId
-	//ueid := "imsi-208930000000003"
-	fmt.Println("ueid: ", ueid)
 	var result mongoclient.AuthenticationSubscription
 	result = mongoclient.GetMongoData(ueid)
-	//fmt.Printf("Object ID: %s\n", result.ID.Hex())
-	//fmt.Printf("Authentication Method: %s\n", result.AuthenticationMethod)
-	//fmt.Printf("Permanent Key Value: %s\n", result.PermanentKey.PermanentKeyValue)
-	//fmt.Printf("Sequence Number: %s\n", result.SequenceNumber)
 
 	// kStr should be got from mongoDB
 	//kStr = "8baf473f2f8fd09487cccbd7097c6862"
@@ -175,14 +167,11 @@ func XAppAKAGenerateAUTH(ueId string) (response *models.AuthenticationVector, er
 			hasOP = true
 		}
 
-	} else {
-		logger.GmmLog.Infof("opStr length is ", len(opStr))
 	}
 
 	if !hasOPC && !hasOP {
 		return nil, err
 	}
-	fmt.Println("opcStr: ", opcStr)
 
 	if !hasOPC {
 		if hasK && hasOP {
@@ -203,8 +192,7 @@ func XAppAKAGenerateAUTH(ueId string) (response *models.AuthenticationVector, er
 		logger.GmmLog.Infof("err:", err)
 		return nil, err
 	}
-	fmt.Println("sqnStr: ", sqnStr)
-	logger.GmmLog.Infof("K=[%x], sqn=[%x], OP=[%x], OPC=[%x]", k, sqn, op, opc)
+	//logger.GmmLog.Infof("K=[%x], sqn=[%x], OP=[%x], OPC=[%x]", k, sqn, op, opc)
 
 	RAND := make([]byte, 16)
 	_, err = cryptoRand.Read(RAND)
@@ -220,8 +208,7 @@ func XAppAKAGenerateAUTH(ueId string) (response *models.AuthenticationVector, er
 		logger.GmmLog.Infof("err:", err)
 		return nil, err
 	}
-	fmt.Println("AMF: ", AMF)
-	logger.GmmLog.Infof("RAND=[%x], AMF=[%x]", RAND, AMF)
+	//logger.GmmLog.Infof("RAND=[%x], AMF=[%x]", RAND, AMF)
 
 	// re-synchronization
 	if authInfoRequest.ResynchronizationInfo != nil {
@@ -303,18 +290,18 @@ func XAppAKAGenerateAUTH(ueId string) (response *models.AuthenticationVector, er
 	if err != nil {
 		logger.GmmLog.Infof("milenage F2345 err:", err)
 	}
-	logger.GmmLog.Infof("milenage RES=[%s]", hex.EncodeToString(RES))
+	//logger.GmmLog.Infof("milenage RES=[%s]", hex.EncodeToString(RES))
 
 	// Generate AUTN
-	logger.GmmLog.Infof("SQN=[%x], AK=[%x]", sqn, AK)
-	logger.GmmLog.Infof("AMF=[%x], macA=[%x]", AMF, macA)
+	//logger.GmmLog.Infof("SQN=[%x], AK=[%x]", sqn, AK)
+	//logger.GmmLog.Infof("AMF=[%x], macA=[%x]", AMF, macA)
 	SQNxorAK := make([]byte, 6)
 	for i := 0; i < len(sqn); i++ {
 		SQNxorAK[i] = sqn[i] ^ AK[i]
 	}
-	logger.GmmLog.Infof("SQN xor AK=[%x]", SQNxorAK)
+	//logger.GmmLog.Infof("SQN xor AK=[%x]", SQNxorAK)
 	AUTN := append(append(SQNxorAK, AMF...), macA...)
-	logger.GmmLog.Infof("AUTN=[%x]", AUTN)
+	//logger.GmmLog.Infof("AUTN=[%x]", AUTN)
 
 	var av models.AuthenticationVector
 
@@ -331,7 +318,7 @@ func XAppAKAGenerateAUTH(ueId string) (response *models.AuthenticationVector, er
 		logger.GmmLog.Infof("Get kdfValForXresStar err: %+v", err)
 	}
 	xresStar := kdfValForXresStar[len(kdfValForXresStar)/2:]
-	logger.GmmLog.Infof("xresStar=[%x]", xresStar)
+	//logger.GmmLog.Infof("xresStar=[%x]", xresStar)
 
 	// derive Kausf
 	FC = ueauth.FC_FOR_KAUSF_DERIVATION
@@ -341,7 +328,7 @@ func XAppAKAGenerateAUTH(ueId string) (response *models.AuthenticationVector, er
 	if err != nil {
 		logger.GmmLog.Infof("Get kdfValForKausf err: %+v", err)
 	}
-	logger.GmmLog.Infof("Kausf=[%x]", kdfValForKausf)
+	//logger.GmmLog.Infof("Kausf=[%x]", kdfValForKausf)
 
 	// Fill in rand, xresStar, autn, kausf
 	av.Rand = hex.EncodeToString(RAND)
@@ -351,7 +338,5 @@ func XAppAKAGenerateAUTH(ueId string) (response *models.AuthenticationVector, er
 	av.AvType = models.AvType__5_G_HE_AKA
 
 	response = &av
-	//response.Supi = supi
-	fmt.Println("av: ", av)
 	return response, err
 }

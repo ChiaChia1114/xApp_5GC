@@ -7,7 +7,6 @@ import (
 	"github.com/free5gc/amf/internal/context"
 	gmm_common "github.com/free5gc/amf/internal/gmm/common"
 	uestatus "github.com/free5gc/amf/internal/gmm/message/uestatus"
-	Authtimer "github.com/free5gc/amf/internal/gmm/timer"
 	"github.com/free5gc/amf/internal/logger"
 	ngap_message "github.com/free5gc/amf/internal/ngap/message"
 	"github.com/free5gc/amf/internal/sbi/producer/callback"
@@ -16,7 +15,6 @@ import (
 	"github.com/free5gc/ngap/ngapType"
 	"github.com/free5gc/openapi/models"
 	"strings"
-	"time"
 )
 
 // backOffTimerUint = 7 means backoffTimer is null
@@ -130,7 +128,6 @@ func SendAuthenticationRequest(ue *context.RanUe) {
 		return
 	}
 
-	fmt.Println("nasMsg: ", nasMsg)
 	//------------------------ Terry Modify Start --------------------------//
 	//	Goals: Generate a OUT-X nas packet.                                 //
 	//  Method:                                                             //
@@ -144,18 +141,16 @@ func SendAuthenticationRequest(ue *context.RanUe) {
 	lastPart := parts[len(parts)-1]
 	Supi := "imsi-20893" + lastPart
 
-	fmt.Println("Last part:", Supi)
-
 	if !(uestatus.CheckUEStatus(Supi)) {
 		// UE is in initial Context Set up procedure
 		newUe := uestatus.NewAmfUe(Supi, true)
 		uestatus.StoreAmfUe(newUe)
-		Authtimer.NORAinit()
 
 		nasMessageBytes := []byte{}
 		originalOctetForAuth := []byte{0x7e, 0x00, 0x56, 0x01, 0x02, 0x00, 0x00}
-		//nasMessageBytes = append(nasMessageBytes, nasMsg...)
 		nasMessageBytes = append(nasMessageBytes, originalOctetForAuth...)
+
+		logger.GmmLog.Infof("In GenerateAuthDataProcedure")
 
 		for i := 0; i <= 9; i++ {
 			av, err := XAppAKAGenerateAUTH(Supi)
@@ -163,8 +158,6 @@ func SendAuthenticationRequest(ue *context.RanUe) {
 				amfUe.GmmLog.Error(err.Error())
 				return
 			}
-			//fmt.Println("AV-AUTN:", av.Autn)
-			//fmt.Println("AV-RAND:", av.Rand)
 
 			RANDhexString := av.Rand
 			RANDnewBytes, err := hex.DecodeString(RANDhexString)
@@ -198,22 +191,20 @@ func SendAuthenticationRequest(ue *context.RanUe) {
 		TestnasMsg := new(bytes.Buffer)
 		TestnasMsg.Write(nasMessageBytes)
 		messageSlice := TestnasMsg.Bytes()
-		fmt.Println("NAS message:", TestnasMsg.Bytes())
 
-		//fmt.Println("NAS message:", nasMsg)
 		ue.XAppauth = true
 
-		ET := time.Now()
-		ST := Authtimer.GetStartTime(ue.AmfUe.Suci)
-		AuthenticationServiceTime := Authtimer.CalculateServiceTime(ST, ET)
-		fmt.Println("Authentication Procedure Service Time: ", AuthenticationServiceTime)
-
-		STforTransmission := time.Now()
-		fmt.Println(STforTransmission)
-		Result := Authtimer.SetStartTime(ue.AmfUe.Suci, STforTransmission)
-		if !Result {
-			fmt.Println("Set Start Timer for Transmission time with Authentication Request failed.")
-		}
+		//ET := time.Now()
+		//ST := Authtimer.GetStartTime(ue.AmfUe.Suci)
+		//AuthenticationServiceTime := Authtimer.CalculateServiceTime(ST, ET)
+		//fmt.Println("Authentication Procedure Service Time: ", AuthenticationServiceTime)
+		//
+		//STforTransmission := time.Now()
+		//fmt.Println(STforTransmission)
+		//Result := Authtimer.SetStartTime(ue.AmfUe.Suci, STforTransmission)
+		//if !Result {
+		//	fmt.Println("Set Start Timer for Transmission time with Authentication Request failed.")
+		//}
 		//------------------------ Terry Modify End --------------------------//
 
 		ngap_message.SendDownlinkNasTransport(ue, messageSlice, nil)
@@ -231,19 +222,19 @@ func SendAuthenticationRequest(ue *context.RanUe) {
 		}
 
 	} else {
+		//ET := time.Now()
+		//ST := Authtimer.GetStartTime(ue.AmfUe.Suci)
+		//AuthenticationServiceTime := Authtimer.CalculateServiceTime(ST, ET)
+		//fmt.Println("Authentication Procedure Service Time: ", AuthenticationServiceTime)
+		//
+		//STforTransmission := time.Now()
+		//fmt.Println(STforTransmission)
+		//Result := Authtimer.SetStartTime(ue.AmfUe.Suci, STforTransmission)
+		//if !Result {
+		//	fmt.Println("Set Start Timer for Transmission time with Authentication Request failed.")
+		//}
+
 		ngap_message.SendDownlinkNasTransport(ue, nasMsg, nil)
-
-		ET := time.Now()
-		ST := Authtimer.GetStartTime(ue.AmfUe.Suci)
-		AuthenticationServiceTime := Authtimer.CalculateServiceTime(ST, ET)
-		fmt.Println("Authentication Procedure Service Time: ", AuthenticationServiceTime)
-
-		STforTransmission := time.Now()
-		fmt.Println(STforTransmission)
-		Result := Authtimer.SetStartTime(ue.AmfUe.Suci, STforTransmission)
-		if !Result {
-			fmt.Println("Set Start Timer for Transmission time with Authentication Request failed.")
-		}
 
 		if context.AMF_Self().T3560Cfg.Enable {
 			cfg := context.AMF_Self().T3560Cfg

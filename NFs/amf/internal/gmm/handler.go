@@ -450,6 +450,13 @@ func HandleRegistrationRequest(ue *context.AmfUe, anType models.AccessType, proc
 		ue.Suci, plmnId = nasConvert.SuciToString(mobileIdentity5GSContents)
 		ue.PlmnId = util.PlmnIdStringToModels(plmnId)
 		ue.GmmLog.Debugf("SUCI: %s", ue.Suci)
+
+		// Terry Modify start: Add Timer to calculate service time
+		StartTime := time.Now()
+		newUe := Authtimer.NewServiceTimer(ue.Suci, StartTime)
+		Authtimer.StoreTimeStamp(newUe)
+		// Terry Modify end: Add Timer to calculate service time
+
 	case nasMessage.MobileIdentity5GSType5gGuti:
 		guamiFromUeGutiTmp, guti := nasConvert.GutiToString(mobileIdentity5GSContents)
 		guamiFromUeGuti = guamiFromUeGutiTmp
@@ -1485,12 +1492,6 @@ func HandleConfigurationUpdateComplete(ue *context.AmfUe,
 func AuthenticationProcedure(ue *context.AmfUe, accessType models.AccessType) (bool, error) {
 	ue.GmmLog.Info("Authentication procedure")
 
-	// Terry Modify start: Add Timer to calculate service time
-	StartTime := time.Now()
-	newUe := Authtimer.NewServiceTimer(ue.Suci, StartTime)
-	Authtimer.StoreTimeStamp(newUe)
-	// Terry Modify end: Add Timer to calculate service time
-
 	// Check whether UE has SUCI and SUPI
 	if IdentityVerification(ue) {
 		ue.GmmLog.Debugln("UE has SUCI / SUPI")
@@ -1936,19 +1937,8 @@ func HandleAuthenticationResponse(ue *context.AmfUe, accessType models.AccessTyp
 
 		ET := time.Now()
 		ST := Authtimer.GetStartTime(ue.Suci)
-		fmt.Println(ST)
 		AuthenticationServiceTime := Authtimer.CalculateServiceTime(ST, ET)
-		fmt.Println("Authentication Procedure Transmission Time: ", AuthenticationServiceTime)
-
-		if Authtimer.NORACheckMap(ue.Suci) {
-			NORAST := Authtimer.NORAGetStartTime(ue.Suci)
-			if !NORAST.IsZero() && !ET.IsZero() {
-				NORAAuthenticationServiceTime := Authtimer.NORACalculateServiceTime(NORAST, ET)
-				fmt.Println("NORA-AKA Authentication Procedure Transmission Time: ", NORAAuthenticationServiceTime)
-			} else {
-				fmt.Println("Start or End time is not initialized.")
-			}
-		}
+		fmt.Println("Authentication Procedure Service Time: ", AuthenticationServiceTime)
 
 		result := resStar[0:1]
 		switch result[0] {
