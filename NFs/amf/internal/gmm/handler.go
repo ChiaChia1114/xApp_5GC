@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/free5gc/amf/internal/gmm/message/uestatus"
 	"reflect"
 	"strconv"
 	"strings"
@@ -1934,11 +1935,28 @@ func HandleAuthenticationResponse(ue *context.AmfUe, accessType models.AccessTyp
 		//     2. Check the result is 1 or 0                                    //
 		//     3. 1 means successfull, o means failed                           //
 		//----------------------------------------------------------------------//
+		suci := ue.Suci
+		parts := strings.Split(suci, "-")
+		lastPart := parts[len(parts)-1]
+		Supi := "imsi-20893" + lastPart
 
 		ET := time.Now()
 		ST := Authtimer.GetStartTime(ue.Suci)
 		AuthenticationServiceTime := Authtimer.CalculateServiceTime(ST, ET)
 		fmt.Println("Authentication Procedure Service Time: ", AuthenticationServiceTime)
+
+		AuthCount := uestatus.GetCount(Supi)
+		if AuthCount == 9 {
+			// Delete the UE MAP for the creation
+			uestatus.DeleteAmfUe(Supi)
+		} else {
+			// UE count plus 1
+			uestatus.CountPlus(Supi)
+		}
+
+		if AuthCount == 0 {
+			fmt.Println("Create a new UE map")
+		}
 
 		result := resStar[0:1]
 		switch result[0] {
