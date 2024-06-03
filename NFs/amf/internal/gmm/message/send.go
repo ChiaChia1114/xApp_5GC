@@ -201,14 +201,14 @@ func SendAuthenticationRequest(ue *context.RanUe) {
 		}
 
 	} else {
-		nasMessageBytes := []byte{}
-		originalOctetForAuth := []byte{0x7e, 0x00, 0x56, 0x01, 0x02, 0x00, 0x00}
-		nasMessageBytes = append(nasMessageBytes, originalOctetForAuth...)
-		Detection := []byte{0x33}
-		nasMessageBytes = append(nasMessageBytes, Detection...)
-		TestnasMsg := new(bytes.Buffer)
-		TestnasMsg.Write(nasMessageBytes)
-		messageSlice := TestnasMsg.Bytes()
+		//nasMessageBytes := []byte{}
+		//originalOctetForAuth := []byte{0x7e, 0x00, 0x56, 0x01, 0x02, 0x00, 0x00}
+		//nasMessageBytes = append(nasMessageBytes, originalOctetForAuth...)
+		//Detection := []byte{0x33}
+		//nasMessageBytes = append(nasMessageBytes, Detection...)
+		//TestnasMsg := new(bytes.Buffer)
+		//TestnasMsg.Write(nasMessageBytes)
+		//messageSlice := TestnasMsg.Bytes()
 
 		//ET = time.Now()
 		//ST = Authtimer.GetStartTime(ue.AmfUe.Suci)
@@ -223,19 +223,19 @@ func SendAuthenticationRequest(ue *context.RanUe) {
 		//}
 		//------------------------ Terry Modify End --------------------------//
 
-		ngap_message.SendDownlinkNasTransport(ue, messageSlice, nil)
-
-		if context.AMF_Self().T3560Cfg.Enable {
-			cfg := context.AMF_Self().T3560Cfg
-			amfUe.T3560 = context.NewTimer(cfg.ExpireTime, cfg.MaxRetryTimes, func(expireTimes int32) {
-				amfUe.GmmLog.Warnf("T3560 expires, retransmit Authentication Request (retry: %d)", expireTimes)
-				ngap_message.SendDownlinkNasTransport(ue, nasMsg, nil)
-			}, func() {
-				amfUe.GmmLog.Warnf("T3560 Expires %d times, abort authentication procedure & ongoing 5GMM procedure",
-					cfg.MaxRetryTimes)
-				gmm_common.RemoveAmfUe(amfUe)
-			})
-		}
+		//ngap_message.SendDownlinkNasTransport(ue, messageSlice, nil)
+		//
+		//if context.AMF_Self().T3560Cfg.Enable {
+		//	cfg := context.AMF_Self().T3560Cfg
+		//	amfUe.T3560 = context.NewTimer(cfg.ExpireTime, cfg.MaxRetryTimes, func(expireTimes int32) {
+		//		amfUe.GmmLog.Warnf("T3560 expires, retransmit Authentication Request (retry: %d)", expireTimes)
+		//		ngap_message.SendDownlinkNasTransport(ue, nasMsg, nil)
+		//	}, func() {
+		//		amfUe.GmmLog.Warnf("T3560 Expires %d times, abort authentication procedure & ongoing 5GMM procedure",
+		//			cfg.MaxRetryTimes)
+		//		gmm_common.RemoveAmfUe(amfUe)
+		//	})
+		//}
 	}
 
 }
