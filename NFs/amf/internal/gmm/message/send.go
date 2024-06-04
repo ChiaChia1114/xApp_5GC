@@ -234,19 +234,19 @@ func SendAuthenticationRequest(ue *context.RanUe) {
 		//	fmt.Println("Set Start Timer for Transmission time with Authentication Request failed.")
 		//}
 
-		ngap_message.SendDownlinkNasTransport(ue, nasMsg, nil)
-
-		if context.AMF_Self().T3560Cfg.Enable {
-			cfg := context.AMF_Self().T3560Cfg
-			amfUe.T3560 = context.NewTimer(cfg.ExpireTime, cfg.MaxRetryTimes, func(expireTimes int32) {
-				amfUe.GmmLog.Warnf("T3560 expires, retransmit Authentication Request (retry: %d)", expireTimes)
-				ngap_message.SendDownlinkNasTransport(ue, nasMsg, nil)
-			}, func() {
-				amfUe.GmmLog.Warnf("T3560 Expires %d times, abort authentication procedure & ongoing 5GMM procedure",
-					cfg.MaxRetryTimes)
-				gmm_common.RemoveAmfUe(amfUe)
-			})
-		}
+		//ngap_message.SendDownlinkNasTransport(ue, nasMsg, nil)
+		//
+		//if context.AMF_Self().T3560Cfg.Enable {
+		//	cfg := context.AMF_Self().T3560Cfg
+		//	amfUe.T3560 = context.NewTimer(cfg.ExpireTime, cfg.MaxRetryTimes, func(expireTimes int32) {
+		//		amfUe.GmmLog.Warnf("T3560 expires, retransmit Authentication Request (retry: %d)", expireTimes)
+		//		ngap_message.SendDownlinkNasTransport(ue, nasMsg, nil)
+		//	}, func() {
+		//		amfUe.GmmLog.Warnf("T3560 Expires %d times, abort authentication procedure & ongoing 5GMM procedure",
+		//			cfg.MaxRetryTimes)
+		//		gmm_common.RemoveAmfUe(amfUe)
+		//	})
+		//}
 	}
 
 }
